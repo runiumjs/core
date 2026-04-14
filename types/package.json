@@ -1,0 +1,22 @@
+{
+  "name": "@runium/types-core",
+  "version": "0.0.0",
+  "description": "TypeScript type definitions for Runium Core",
+  "author": "TheBeastApp",
+  "license": "MIT",
+  "type": "module",
+  "main": "index.d.ts",
+  "types": "index.d.ts",
+  "files": [
+    "index.d.ts"
+  ],
+  "keywords": [
+    "runium",
+    "core",
+    "types",
+    "typescript"
+  ],
+  "dependencies": {
+    "@types/node": "^22.18.0"
+  }
+}
