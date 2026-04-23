@@ -1,7 +1,6 @@
-import Ajv from 'ajv/dist/2020.js';
-import ajvKeywords from 'ajv-keywords';
 import { RuniumTaskState, TaskOptions } from './task';
 import { RuniumError } from './error';
+import { Ajv, ajvKeywords } from './validation';
 
 /**
  * Project task start mode
@@ -65,6 +64,7 @@ export interface ProjectTaskConfig<Options = unknown> {
   options: Options;
   type?: ProjectTaskType | string;
   name?: string;
+  description?: string;
   mode?: ProjectTaskStartMode;
   dependencies?: ProjectTaskDependency[];
   handlers?: ProjectTaskHandler[];
@@ -74,8 +74,7 @@ export interface ProjectTaskConfig<Options = unknown> {
 /**
  * Project default task config
  */
-export interface ProjectDefaultTaskConfig
-  extends ProjectTaskConfig<TaskOptions> {
+export interface ProjectDefaultTaskConfig extends ProjectTaskConfig<TaskOptions> {
   type?: ProjectTaskType.DEFAULT;
 }
 
@@ -90,16 +89,18 @@ export interface ProjectActionBase<Options = unknown> {
 /**
  * Project action emit event
  */
-export interface ProjectActionEmitEvent
-  extends ProjectActionBase<{ event: string }> {
+export interface ProjectActionEmitEvent extends ProjectActionBase<{
+  event: string;
+}> {
   type: ProjectActionType.EMIT_EVENT;
 }
 
 /**
  * Project action process task
  */
-export interface ProjectActionProcessTask
-  extends ProjectActionBase<{ taskId: string }> {
+export interface ProjectActionProcessTask extends ProjectActionBase<{
+  taskId: string;
+}> {
   type:
     | ProjectActionType.START_TASK
     | ProjectActionType.RESTART_TASK
@@ -116,8 +117,9 @@ export interface ProjectActionStopProject extends ProjectActionBase<never> {
 /**
  * Project action toggle trigger
  */
-export interface ProjectActionToggleTrigger
-  extends ProjectActionBase<{ triggerId: string }> {
+export interface ProjectActionToggleTrigger extends ProjectActionBase<{
+  triggerId: string;
+}> {
   type: ProjectActionType.ENABLE_TRIGGER | ProjectActionType.DISABLE_TRIGGER;
 }
 
@@ -159,24 +161,27 @@ interface ProjectTriggerBase<T = unknown> {
 /**
  * Project trigger event
  */
-export interface ProjectTriggerEvent
-  extends ProjectTriggerBase<{ event: string }> {
+export interface ProjectTriggerEvent extends ProjectTriggerBase<{
+  event: string;
+}> {
   type: ProjectTriggerType.EVENT;
 }
 
 /**
  * Project trigger interval
  */
-export interface ProjectTriggerInterval
-  extends ProjectTriggerBase<{ interval: number }> {
+export interface ProjectTriggerInterval extends ProjectTriggerBase<{
+  interval: number;
+}> {
   type: ProjectTriggerType.INTERVAL;
 }
 
 /**
  * Project trigger timeout
  */
-export interface ProjectTriggerTimeout
-  extends ProjectTriggerBase<{ timeout: number }> {
+export interface ProjectTriggerTimeout extends ProjectTriggerBase<{
+  timeout: number;
+}> {
   type: ProjectTriggerType.TIMEOUT;
 }
 
@@ -232,6 +237,7 @@ export type ProjectTaskRestartPolicy =
 export interface ProjectConfig {
   id: string;
   name?: string;
+  description?: string;
   tasks: ProjectTaskConfig[];
   triggers?: ProjectTrigger[];
 }

@@ -7,3 +7,4 @@ export * from './project-config';
 export * from './project-schema';
 export * from './task';
 export * from './trigger';
+export * from './validation';
