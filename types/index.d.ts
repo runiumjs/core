@@ -2,6 +2,8 @@ declare module '@runium/core' {
   import { ChildProcessWithoutNullStreams } from 'node:child_process';
   import { EventEmitter } from 'node:events';
   import { WriteStream } from 'node:fs';
+  import Ajv2020 from 'ajv/dist/2020';
+  import AjvKeywords from 'ajv-keywords';
 
   export function applyMacros(text: string, macros: MacrosCollection): string;
 
@@ -127,17 +129,15 @@ declare module '@runium/core' {
     options: Options;
   }
 
-  export interface ProjectActionEmitEvent
-    extends ProjectActionBase<{
-      event: string;
-    }> {
+  export interface ProjectActionEmitEvent extends ProjectActionBase<{
+    event: string;
+  }> {
     type: ProjectActionType.EMIT_EVENT;
   }
 
-  export interface ProjectActionProcessTask
-    extends ProjectActionBase<{
-      taskId: string;
-    }> {
+  export interface ProjectActionProcessTask extends ProjectActionBase<{
+    taskId: string;
+  }> {
     type:
       | ProjectActionType.START_TASK
       | ProjectActionType.RESTART_TASK
@@ -148,10 +148,9 @@ declare module '@runium/core' {
     type: ProjectActionType.STOP_PROJECT;
   }
 
-  export interface ProjectActionToggleTrigger
-    extends ProjectActionBase<{
-      triggerId: string;
-    }> {
+  export interface ProjectActionToggleTrigger extends ProjectActionBase<{
+    triggerId: string;
+  }> {
     type: ProjectActionType.ENABLE_TRIGGER | ProjectActionType.DISABLE_TRIGGER;
   }
 
@@ -185,8 +184,7 @@ declare module '@runium/core' {
     options: unknown;
   }>;
 
-  export interface ProjectDefaultTaskConfig
-    extends ProjectTaskConfig<TaskOptions> {
+  export interface ProjectDefaultTaskConfig extends ProjectTaskConfig<TaskOptions> {
     type?: ProjectTaskType.DEFAULT;
   }
 
@@ -332,24 +330,21 @@ declare module '@runium/core' {
     options: T;
   }
 
-  export interface ProjectTriggerEvent
-    extends ProjectTriggerBase<{
-      event: string;
-    }> {
+  export interface ProjectTriggerEvent extends ProjectTriggerBase<{
+    event: string;
+  }> {
     type: ProjectTriggerType.EVENT;
   }
 
-  export interface ProjectTriggerInterval
-    extends ProjectTriggerBase<{
-      interval: number;
-    }> {
+  export interface ProjectTriggerInterval extends ProjectTriggerBase<{
+    interval: number;
+  }> {
     type: ProjectTriggerType.INTERVAL;
   }
 
-  export interface ProjectTriggerTimeout
-    extends ProjectTriggerBase<{
-      timeout: number;
-    }> {
+  export interface ProjectTriggerTimeout extends ProjectTriggerBase<{
+    timeout: number;
+  }> {
     type: ProjectTriggerType.TIMEOUT;
   }
 
@@ -511,4 +506,8 @@ declare module '@runium/core' {
     path: string,
     data: T
   ): Promise<void>;
+
+  export const Ajv: typeof Ajv2020;
+
+  export const ajvKeywords: typeof AjvKeywords;
 }

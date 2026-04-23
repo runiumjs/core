@@ -91,6 +91,9 @@ const TASK_COMMON_PROPERTIES = {
   name: {
     type: 'string',
   },
+  description: {
+    type: 'string',
+  },
   type: {
     type: 'string',
   },
@@ -221,6 +224,9 @@ export function getProjectSchema(): object {
         pattern: ID_REGEX.source,
       },
       name: {
+        type: 'string',
+      },
+      description: {
         type: 'string',
       },
       tasks: {
