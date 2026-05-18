@@ -49,6 +49,7 @@ export function applyMacros(text: string, macros: MacrosCollection): string {
     let hasMacros = true;
     while (hasMacros) {
       hasMacros = false;
+      result = unwrap(result);
       result = result.replace(
         macrosRegex,
         (match: string, type: string, args: string) => {
@@ -93,8 +94,5 @@ export function applyMacros(text: string, macros: MacrosCollection): string {
     return result;
   };
 
-  // process text
-  const processedText = macrosNames.length ? apply(text) : text;
-  // apply unwrap macros
-  return unwrap(processedText);
+  return apply(text);
 }
