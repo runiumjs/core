@@ -1,6 +1,6 @@
 {
   "name": "@runium/core",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "Runium Core",
   "author": "TheBeastApp",
   "license": "MIT",
@@ -13,9 +13,9 @@
     "format:types": "prettier --write \"types/**/*.ts\""
   },
   "dependencies": {
-    "ajv": "^8.17.1",
-    "ajv-keywords": "^5.1.0",
-    "bcx-expression-evaluator": "^1.2.1"
+    "ajv": "8.20.0",
+    "ajv-keywords": "5.1.0",
+    "bcx-expression-evaluator": "1.2.2"
   },
   "devDependencies": {
     "@types/node": "^22.18.0",

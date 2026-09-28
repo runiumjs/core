@@ -28,11 +28,15 @@ interface ProjectSchema {
 }
 
 interface ProjectSchemaTask {
-  properties: {
-    type: {
-      const: string;
+  type?: string;
+  properties?: {
+    type?: {
+      const?: string;
     };
+    [key: string]: unknown;
   };
+  required?: string[];
+  additionalProperties?: boolean;
 }
 
 interface ProjectSchemaAction {
@@ -44,7 +48,7 @@ interface ProjectSchemaAction {
   };
 }
 
-export interface ProjectSchemaExtensionProject {
+export interface ProjectSchemaExtensionCommon {
   properties: unknown;
   required?: string[];
 }
@@ -54,9 +58,25 @@ export interface ProjectSchemaExtensionTask {
   options: unknown;
 }
 
+export interface ProjectSchemaExtensionTasks {
+  '*'?: ProjectSchemaExtensionCommon;
+  [key: string]:
+    | ProjectSchemaExtensionTask
+    | ProjectSchemaExtensionCommon
+    | undefined;
+}
+
 export interface ProjectSchemaExtensionAction {
   type: string;
   options?: unknown;
+}
+
+export interface ProjectSchemaExtensionActions {
+  '*'?: ProjectSchemaExtensionCommon;
+  [key: string]:
+    | ProjectSchemaExtensionAction
+    | ProjectSchemaExtensionCommon
+    | undefined;
 }
 
 export interface ProjectSchemaExtensionTrigger {
@@ -64,12 +84,20 @@ export interface ProjectSchemaExtensionTrigger {
   options?: unknown;
 }
 
+export interface ProjectSchemaExtensionTriggers {
+  '*'?: ProjectSchemaExtensionCommon;
+  [key: string]:
+    | ProjectSchemaExtensionTrigger
+    | ProjectSchemaExtensionCommon
+    | undefined;
+}
+
 export interface ProjectSchemaExtension {
-  project?: ProjectSchemaExtensionProject;
-  tasks?: Record<string, ProjectSchemaExtensionTask>;
+  project?: ProjectSchemaExtensionCommon;
+  tasks?: ProjectSchemaExtensionTasks;
   definitions?: Record<string, unknown>;
-  actions?: Record<string, ProjectSchemaExtensionAction>;
-  triggers?: Record<string, ProjectSchemaExtensionTrigger>;
+  actions?: ProjectSchemaExtensionActions;
+  triggers?: ProjectSchemaExtensionTriggers;
 }
 
 export enum ProjectSchemaErrorCode {
@@ -134,14 +162,32 @@ const TRIGGER_COMMON_PROPERTIES = {
 };
 
 /**
+ * Common properties key
+ */
+const COMMON_PROPERTIES_KEY = '*';
+
+/**
  * Create task schema
  * @param type
  * @param options
+ * @param common
  */
-function createTaskSchema(type: string, options: unknown): object {
+function createTaskSchema(
+  type: string,
+  options: unknown,
+  common?: ProjectSchemaExtensionCommon
+): object {
+  const commonProperties = common
+    ? (structuredClone(common.properties as Record<string, unknown>) as Record<
+        string,
+        unknown
+      >)
+    : {};
+  const commonRequired = common?.required || [];
   return {
     type: 'object',
     properties: {
+      ...commonProperties,
       ...structuredClone(TASK_COMMON_PROPERTIES),
       type: {
         const: type,
@@ -150,7 +196,7 @@ function createTaskSchema(type: string, options: unknown): object {
         ...structuredClone(options as object),
       },
     },
-    required: ['id', 'options'],
+    required: Array.from(new Set(['id', 'options', ...commonRequired])),
     additionalProperties: false,
   };
 }
@@ -159,11 +205,20 @@ function createTaskSchema(type: string, options: unknown): object {
  * Create action schema
  * @param type
  * @param options
+ * @param common
  */
 function createActionSchema(
   type: string | string[],
-  options?: unknown
+  options?: unknown,
+  common?: ProjectSchemaExtensionCommon
 ): object {
+  const commonProperties = common
+    ? (structuredClone(common.properties as Record<string, unknown>) as Record<
+        string,
+        unknown
+      >)
+    : {};
+  const commonRequired = common?.required || [];
   const optionsProp = options ? { options } : {};
   const optionsRequired = options ? ['options'] : [];
   const typeProp = Array.isArray(type)
@@ -178,10 +233,13 @@ function createActionSchema(
   return {
     type: 'object',
     properties: {
+      ...commonProperties,
       type: typeProp,
       ...optionsProp,
     },
-    required: ['type', ...optionsRequired],
+    required: Array.from(
+      new Set(['type', ...optionsRequired, ...commonRequired])
+    ),
     additionalProperties: false,
   };
 }
@@ -190,13 +248,26 @@ function createActionSchema(
  * Create trigger schema
  * @param type
  * @param options
+ * @param common
  */
-function createTriggerSchema(type: string, options?: unknown): object {
+function createTriggerSchema(
+  type: string,
+  options?: unknown,
+  common?: ProjectSchemaExtensionCommon
+): object {
+  const commonProperties = common
+    ? (structuredClone(common.properties as Record<string, unknown>) as Record<
+        string,
+        unknown
+      >)
+    : {};
+  const commonRequired = common?.required || [];
   const optionsProp = options ? { options } : {};
   const optionsRequired = options ? ['options'] : [];
   return {
     type: 'object',
     properties: {
+      ...commonProperties,
       ...structuredClone(TRIGGER_COMMON_PROPERTIES),
       type: {
         type: 'string',
@@ -204,7 +275,9 @@ function createTriggerSchema(type: string, options?: unknown): object {
       },
       ...optionsProp,
     },
-    required: ['id', 'type', 'action', ...optionsRequired],
+    required: Array.from(
+      new Set(['id', 'type', 'action', ...optionsRequired, ...commonRequired])
+    ),
     additionalProperties: false,
   };
 }
@@ -232,6 +305,14 @@ export function getProjectSchema(): object {
       tasks: {
         type: 'array',
         items: {
+          type: 'object',
+          discriminator: { propertyName: 'type' },
+          properties: {
+            type: {
+              type: 'string',
+            },
+          },
+          required: ['type'],
           oneOf: [
             {
               $ref: '#/$defs/Runium_TaskConfig',
@@ -329,6 +410,8 @@ export function getProjectSchema(): object {
         additionalProperties: false,
       },
       Runium_Trigger: {
+        type: 'object',
+        discriminator: { propertyName: 'type' },
         oneOf: [
           {
             $ref: '#/$defs/Runium_TriggerEvent',
@@ -374,6 +457,8 @@ export function getProjectSchema(): object {
         additionalProperties: false,
       }),
       Runium_Action: {
+        type: 'object',
+        discriminator: { propertyName: 'type' },
         oneOf: [
           {
             $ref: '#/$defs/Runium_ActionEmitEvent',
@@ -454,6 +539,12 @@ export function getProjectSchema(): object {
           },
           cwd: {
             type: 'string',
+          },
+          envFile: {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
           },
           env: {
             $ref: '#/$defs/Runium_Env',
@@ -578,7 +669,7 @@ function extendProjectPropertiesSchema(
 ): ProjectSchema {
   if (extension) {
     schema.properties = {
-      ...(extension.properties || {}),
+      ...((extension.properties || {}) as Record<string, unknown>),
       ...schema.properties,
     };
     schema.required = Array.from(
@@ -607,6 +698,39 @@ function extendDefinitionsSchema(
 }
 
 /**
+ * Apply common properties to a list of schema definitions referenced by $ref
+ * @param refs
+ * @param definitions
+ * @param common
+ */
+function applyCommonPropertiesToSchemas(
+  refs: { $ref: string }[],
+  definitions: ProjectSchema['$defs'],
+  common?: ProjectSchemaExtensionCommon
+): void {
+  if (!common) {
+    return;
+  }
+
+  const commonProperties = (common.properties as Record<string, unknown>) || {};
+  const commonRequired = common.required || [];
+
+  for (const ref of refs) {
+    const defName = ref.$ref.split('/').pop() || '';
+    const defSchema = definitions[defName] as ProjectSchemaTask | undefined;
+    if (defSchema) {
+      defSchema.properties = {
+        ...structuredClone(commonProperties),
+        ...(defSchema.properties || {}),
+      };
+      defSchema.required = Array.from(
+        new Set([...(defSchema.required || []), ...commonRequired])
+      );
+    }
+  }
+}
+
+/**
  * Extend tasks schema
  * @param schema
  * @param extension
@@ -616,6 +740,17 @@ function extendTasksSchema(
   extension: ProjectSchemaExtension['tasks']
 ): ProjectSchema {
   if (extension) {
+    const common = extension[COMMON_PROPERTIES_KEY] as
+      | ProjectSchemaExtensionCommon
+      | undefined;
+
+    // apply common task properties to all existing task types
+    applyCommonPropertiesToSchemas(
+      schema.properties.tasks.items.oneOf,
+      schema.$defs,
+      common
+    );
+
     // check types uniqueness
     const taskTypes = new Set(
       schema.properties.tasks.items.oneOf.map(task => {
@@ -629,27 +764,34 @@ function extendTasksSchema(
 
     const tasks: Record<string, object> = {};
     for (const [key, value] of Object.entries(extension)) {
-      if (taskTypes.has(value.type)) {
+      if (key === COMMON_PROPERTIES_KEY) {
+        continue;
+      }
+
+      const taskValue = value as ProjectSchemaExtensionTask;
+      if (taskTypes.has(taskValue.type)) {
         throw new RuniumError(
-          `Task type "${value.type}" already used in project schema`,
+          `Task type "${taskValue.type}" already used in project schema`,
           ProjectSchemaErrorCode.TASK_TYPE_ALREADY_USED,
           {
-            type: value.type,
+            type: taskValue.type,
           }
         );
       }
-      tasks[key] = createTaskSchema(value.type, value.options);
+      tasks[key] = createTaskSchema(taskValue.type, taskValue.options, common);
 
       schema.properties.tasks.items.oneOf.push({
         $ref: `#/$defs/${key}`,
       });
 
-      taskTypes.add(value.type);
+      taskTypes.add(taskValue.type);
     }
-    schema.$defs = {
-      ...tasks,
-      ...schema.$defs,
-    };
+    if (Object.keys(tasks).length) {
+      schema.$defs = {
+        ...tasks,
+        ...schema.$defs,
+      };
+    }
   }
   return schema;
 }
@@ -664,6 +806,17 @@ function extendActionsSchema(
   extension: ProjectSchemaExtension['actions']
 ): ProjectSchema {
   if (extension) {
+    const common = extension[COMMON_PROPERTIES_KEY] as
+      | ProjectSchemaExtensionCommon
+      | undefined;
+
+    // apply common action properties to all existing action types
+    applyCommonPropertiesToSchemas(
+      schema.$defs.Runium_Action.oneOf,
+      schema.$defs,
+      common
+    );
+
     // check types uniqueness
     const actionTypes = new Set(
       schema.$defs.Runium_Action.oneOf
@@ -678,28 +831,39 @@ function extendActionsSchema(
 
     const actions: Record<string, object> = {};
     for (const [key, value] of Object.entries(extension)) {
-      if (actionTypes.has(value.type)) {
+      if (key === COMMON_PROPERTIES_KEY) {
+        continue;
+      }
+
+      const actionValue = value as ProjectSchemaExtensionAction;
+      if (actionTypes.has(actionValue.type)) {
         throw new RuniumError(
-          `Action type "${value.type}" already used in project schema`,
+          `Action type "${actionValue.type}" already used in project schema`,
           ProjectSchemaErrorCode.ACTION_TYPE_ALREADY_USED,
           {
-            type: value.type,
+            type: actionValue.type,
           }
         );
       }
 
-      actions[key] = createActionSchema(value.type, value.options);
+      actions[key] = createActionSchema(
+        actionValue.type,
+        actionValue.options,
+        common
+      );
 
       schema.$defs.Runium_Action.oneOf.push({
         $ref: `#/$defs/${key}`,
       });
 
-      actionTypes.add(value.type);
+      actionTypes.add(actionValue.type);
     }
-    schema.$defs = {
-      ...actions,
-      ...schema.$defs,
-    };
+    if (Object.keys(actions).length) {
+      schema.$defs = {
+        ...actions,
+        ...schema.$defs,
+      };
+    }
   }
   return schema;
 }
@@ -714,6 +878,17 @@ function extendTriggersSchema(
   extension: ProjectSchemaExtension['triggers']
 ): ProjectSchema {
   if (extension) {
+    const common = extension[COMMON_PROPERTIES_KEY] as
+      | ProjectSchemaExtensionCommon
+      | undefined;
+
+    // apply common trigger properties to all existing trigger types
+    applyCommonPropertiesToSchemas(
+      schema.$defs.Runium_Trigger.oneOf,
+      schema.$defs,
+      common
+    );
+
     // check types uniqueness
     const triggerTypes = new Set(
       schema.$defs.Runium_Trigger.oneOf.map(trigger => {
@@ -726,28 +901,39 @@ function extendTriggersSchema(
 
     const triggers: Record<string, object> = {};
     for (const [key, value] of Object.entries(extension)) {
-      if (triggerTypes.has(value.type)) {
+      if (key === COMMON_PROPERTIES_KEY) {
+        continue;
+      }
+
+      const triggerValue = value as ProjectSchemaExtensionTrigger;
+      if (triggerTypes.has(triggerValue.type)) {
         throw new RuniumError(
-          `Trigger type "${value.type}" already used in project schema`,
+          `Trigger type "${triggerValue.type}" already used in project schema`,
           ProjectSchemaErrorCode.TRIGGER_TYPE_ALREADY_USED,
           {
-            type: value.type,
+            type: triggerValue.type,
           }
         );
       }
 
-      triggers[key] = createTriggerSchema(value.type, value.options);
+      triggers[key] = createTriggerSchema(
+        triggerValue.type,
+        triggerValue.options,
+        common
+      );
 
       schema.$defs.Runium_Trigger.oneOf.push({
         $ref: `#/$defs/${key}`,
       });
 
-      triggerTypes.add(value.type);
+      triggerTypes.add(triggerValue.type);
     }
-    schema.$defs = {
-      ...triggers,
-      ...schema.$defs,
-    };
+    if (Object.keys(triggers).length) {
+      schema.$defs = {
+        ...triggers,
+        ...schema.$defs,
+      };
+    }
   }
   return schema;
 }

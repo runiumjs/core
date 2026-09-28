@@ -5,9 +5,10 @@ import {
 } from 'node:child_process';
 import { EventEmitter } from 'node:events';
 import { createWriteStream, WriteStream } from 'node:fs';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile, stat } from 'node:fs/promises';
 import { constants } from 'node:os';
 import { dirname, resolve } from 'node:path';
+import { parseEnv } from 'node:util';
 import { killProcessTree } from './process-tree';
 
 /**
@@ -30,6 +31,7 @@ export enum TaskEvent {
   STATE_CHANGE = 'state-change',
   STDOUT = 'stdout',
   STDERR = 'stderr',
+  NOTICE = 'notice',
 }
 
 /**
@@ -53,6 +55,7 @@ export interface TaskOptions {
   shell?: boolean;
   stopSignal?: string;
   cwd?: string;
+  envFile?: string[];
   env?: { [key: string]: string | number | boolean };
   ttl?: number;
   log?: {
@@ -130,6 +133,9 @@ export class Task extends RuniumTask<TaskOptions, TaskState> {
       ...(options.env || {}),
     } as TaskOptions['env'];
     this.options.cwd = resolve(process.cwd(), options.cwd || '');
+    this.options.envFile = options.envFile?.map(path =>
+      resolve(this.options.cwd!, path)
+    );
   }
 
   /**
@@ -177,6 +183,8 @@ export class Task extends RuniumTask<TaskOptions, TaskState> {
     try {
       await this.initLogStreams();
 
+      const fileEnv = await this.loadEnvFiles();
+
       const {
         cwd,
         command,
@@ -187,7 +195,11 @@ export class Task extends RuniumTask<TaskOptions, TaskState> {
 
       this.process = spawn(command, args, {
         cwd,
-        env: env as NodeJS.ProcessEnv,
+        env: {
+          ...process.env,
+          ...fileEnv,
+          ...(env || {}),
+        } as NodeJS.ProcessEnv,
         shell,
         stdio: ['ignore', 'pipe', 'pipe'],
       } as SpawnOptionsWithoutStdio);
@@ -202,6 +214,40 @@ export class Task extends RuniumTask<TaskOptions, TaskState> {
     } catch (error) {
       this.onError(error as Error);
     }
+  }
+
+  protected async loadEnvFiles(): Promise<NodeJS.Dict<string>> {
+    if (!this.options.envFile?.length) {
+      return {};
+    }
+
+    const fileEnvironments = await Promise.all(
+      this.options.envFile.map(async path => {
+        try {
+          await stat(path);
+          return parseEnv(await readFile(path, 'utf8'));
+        } catch (error) {
+          const reason =
+            (error as NodeJS.ErrnoException).code === 'ENOENT'
+              ? 'file does not exist'
+              : error instanceof SyntaxError
+                ? 'invalid format'
+                : 'failed to read';
+          this.emit(
+            TaskEvent.NOTICE,
+            `could not process env file "${path}": ${reason}`
+          );
+          return {};
+        }
+      })
+    );
+
+    const environment: NodeJS.Dict<string> = {};
+    for (const fileEnvironment of fileEnvironments) {
+      Object.assign(environment, fileEnvironment);
+    }
+
+    return environment;
   }
 
   /**

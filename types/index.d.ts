@@ -129,15 +129,17 @@ declare module '@runium/core' {
     options: Options;
   }
 
-  export interface ProjectActionEmitEvent extends ProjectActionBase<{
-    event: string;
-  }> {
+  export interface ProjectActionEmitEvent
+    extends ProjectActionBase<{
+      event: string;
+    }> {
     type: ProjectActionType.EMIT_EVENT;
   }
 
-  export interface ProjectActionProcessTask extends ProjectActionBase<{
-    taskId: string;
-  }> {
+  export interface ProjectActionProcessTask
+    extends ProjectActionBase<{
+      taskId: string;
+    }> {
     type:
       | ProjectActionType.START_TASK
       | ProjectActionType.RESTART_TASK
@@ -148,9 +150,10 @@ declare module '@runium/core' {
     type: ProjectActionType.STOP_PROJECT;
   }
 
-  export interface ProjectActionToggleTrigger extends ProjectActionBase<{
-    triggerId: string;
-  }> {
+  export interface ProjectActionToggleTrigger
+    extends ProjectActionBase<{
+      triggerId: string;
+    }> {
     type: ProjectActionType.ENABLE_TRIGGER | ProjectActionType.DISABLE_TRIGGER;
   }
 
@@ -184,7 +187,8 @@ declare module '@runium/core' {
     options: unknown;
   }>;
 
-  export interface ProjectDefaultTaskConfig extends ProjectTaskConfig<TaskOptions> {
+  export interface ProjectDefaultTaskConfig
+    extends ProjectTaskConfig<TaskOptions> {
     type?: ProjectTaskType.DEFAULT;
   }
 
@@ -206,9 +210,11 @@ declare module '@runium/core' {
     PROCESS_ACTION = 'process-action',
     ENABLE_TRIGGER = 'enable-trigger',
     DISABLE_TRIGGER = 'disable-trigger',
+    NOTICE = 'notice',
     TASK_STATE_CHANGE = 'task-state-change',
     TASK_STDOUT = 'task-stdout',
     TASK_STDERR = 'task-stderr',
+    TASK_NOTICE = 'task-notice',
   }
 
   export enum ProjectSchemaErrorCode {
@@ -217,22 +223,17 @@ declare module '@runium/core' {
     TRIGGER_TYPE_ALREADY_USED = 'project-schema-trigger-type-already-used',
   }
 
-  export interface ProjectSchemaExtension {
-    project?: ProjectSchemaExtensionProject;
-    tasks?: Record<string, ProjectSchemaExtensionTask>;
-    definitions?: Record<string, unknown>;
-    actions?: Record<string, ProjectSchemaExtensionAction>;
-    triggers?: Record<string, ProjectSchemaExtensionTrigger>;
-  }
-
-  export interface ProjectSchemaExtensionAction {
-    type: string;
-    options?: unknown;
-  }
-
-  export interface ProjectSchemaExtensionProject {
+  export interface ProjectSchemaExtensionCommon {
     properties: unknown;
     required?: string[];
+  }
+
+  export interface ProjectSchemaExtension {
+    project?: ProjectSchemaExtensionCommon;
+    tasks?: ProjectSchemaExtensionTasks;
+    definitions?: Record<string, unknown>;
+    actions?: ProjectSchemaExtensionActions;
+    triggers?: ProjectSchemaExtensionTriggers;
   }
 
   export interface ProjectSchemaExtensionTask {
@@ -240,9 +241,38 @@ declare module '@runium/core' {
     options: unknown;
   }
 
+  export interface ProjectSchemaExtensionTasks {
+    '*'?: ProjectSchemaExtensionCommon;
+    [key: string]:
+      | ProjectSchemaExtensionTask
+      | ProjectSchemaExtensionCommon
+      | undefined;
+  }
+
+  export interface ProjectSchemaExtensionAction {
+    type: string;
+    options?: unknown;
+  }
+
+  export interface ProjectSchemaExtensionActions {
+    '*'?: ProjectSchemaExtensionCommon;
+    [key: string]:
+      | ProjectSchemaExtensionAction
+      | ProjectSchemaExtensionCommon
+      | undefined;
+  }
+
   export interface ProjectSchemaExtensionTrigger {
     type: string;
     options?: unknown;
+  }
+
+  export interface ProjectSchemaExtensionTriggers {
+    '*'?: ProjectSchemaExtensionCommon;
+    [key: string]:
+      | ProjectSchemaExtensionTrigger
+      | ProjectSchemaExtensionCommon
+      | undefined;
   }
 
   export interface ProjectState {
@@ -330,21 +360,24 @@ declare module '@runium/core' {
     options: T;
   }
 
-  export interface ProjectTriggerEvent extends ProjectTriggerBase<{
-    event: string;
-  }> {
+  export interface ProjectTriggerEvent
+    extends ProjectTriggerBase<{
+      event: string;
+    }> {
     type: ProjectTriggerType.EVENT;
   }
 
-  export interface ProjectTriggerInterval extends ProjectTriggerBase<{
-    interval: number;
-  }> {
+  export interface ProjectTriggerInterval
+    extends ProjectTriggerBase<{
+      interval: number;
+    }> {
     type: ProjectTriggerType.INTERVAL;
   }
 
-  export interface ProjectTriggerTimeout extends ProjectTriggerBase<{
-    timeout: number;
-  }> {
+  export interface ProjectTriggerTimeout
+    extends ProjectTriggerBase<{
+      timeout: number;
+    }> {
     type: ProjectTriggerType.TIMEOUT;
   }
 
@@ -455,6 +488,7 @@ declare module '@runium/core' {
     STATE_CHANGE = 'state-change',
     STDOUT = 'stdout',
     STDERR = 'stderr',
+    NOTICE = 'notice',
   }
 
   export interface TaskOptions {
@@ -463,6 +497,7 @@ declare module '@runium/core' {
     shell?: boolean;
     stopSignal?: string;
     cwd?: string;
+    envFile?: string[];
     env?: {
       [key: string]: string | number | boolean;
     };
