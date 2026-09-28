@@ -326,7 +326,12 @@ export function isCustomTrigger(
   return !RUNIUM_TRIGGER_TYPES.has(trigger.type as ProjectTriggerType);
 }
 
-const ajv = new Ajv({ allowUnionTypes: true, allErrors: true, verbose: true });
+const ajv = new Ajv({
+  allowUnionTypes: true,
+  allErrors: true,
+  verbose: true,
+  discriminator: true,
+});
 ajvKeywords(ajv, ['uniqueItemProperties']);
 
 /**
@@ -491,8 +496,14 @@ function validateExistingElements(project: ProjectConfig): void {
  * @param schema
  */
 export function validateProject(project: ProjectConfig, schema: object): void {
+  // normalize missing task types for discriminator without mutating the original config
+  const validationProject = structuredClone(project);
+  for (const task of validationProject.tasks) {
+    task.type = task.type || ProjectTaskType.DEFAULT;
+  }
+
   // validate schema
-  validateSchema(project, schema);
+  validateSchema(validationProject, schema);
 
   // validate existing elements
   validateExistingElements(project);

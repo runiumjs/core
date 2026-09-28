@@ -57,9 +57,11 @@ export enum ProjectEvent {
   PROCESS_ACTION = 'process-action',
   ENABLE_TRIGGER = 'enable-trigger',
   DISABLE_TRIGGER = 'disable-trigger',
+  NOTICE = 'notice',
   TASK_STATE_CHANGE = 'task-state-change',
   TASK_STDOUT = 'task-stdout',
   TASK_STDERR = 'task-stderr',
+  TASK_NOTICE = 'task-notice',
 }
 
 /**
@@ -412,6 +414,10 @@ export class Project extends EventEmitter {
 
       task.on(TaskEvent.STDERR, (data: string) => {
         this.emit(ProjectEvent.TASK_STDERR, taskConfig.id, data);
+      });
+
+      task.on(TaskEvent.NOTICE, (data: string) => {
+        this.emit(ProjectEvent.TASK_NOTICE, taskConfig.id, data);
       });
 
       this.tasks.set(taskConfig.id, {

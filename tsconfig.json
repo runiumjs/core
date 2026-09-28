@@ -2,7 +2,7 @@
   "compilerOptions": {
     "baseUrl": ".",
     "target": "ES2022",
-    "module": "NodeNext",
+    "module": "esnext",
     "lib": [
       "ES2022"
     ],
@@ -12,7 +12,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "declaration": true,
     "sourceMap": false,
